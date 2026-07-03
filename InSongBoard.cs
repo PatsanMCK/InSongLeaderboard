@@ -1,14 +1,9 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using UnityEngine;
 using System.Runtime.CompilerServices;
 using System.ComponentModel;
-using System.Threading.Tasks;
-using BeatSaberMarkupLanguage.Components;
-using BeatSaberMarkupLanguage;
 using BeatSaberMarkupLanguage.Attributes;
 namespace InSongLeaderboard
 {
