@@ -46,7 +46,6 @@ namespace InSongLeaderboard
             BSEvents.lateMenuSceneLoadedFresh += BSEvents_lateMenuSceneLoadedFresh;
             BSEvents.difficultySelected += BSEvents_difficultySelected;
             BSEvents.levelSelected += BSEvents_levelSelected;
-            BSEvents.menuSceneLoaded += BSEvents_menuSceneLoaded;
         }
 
         private void BSEvents_levelSelected(LevelCollectionViewController arg1, BeatmapLevel arg2)
@@ -54,11 +53,7 @@ namespace InSongLeaderboard
             // log.Info("Level selected");
             storedScores.Clear();
         }
-
-        private void BSEvents_menuSceneLoaded()
-        {
-        }
-
+        
         private async void BSEvents_lateMenuSceneLoadedFresh(ScenesTransitionSetupDataSO obj)
         {
             var userInfo = await GetUserInfo.GetUserAsync();
