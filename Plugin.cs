@@ -111,24 +111,27 @@ namespace InSongLeaderboard
 
         private void BSEvents_GameSceneLoaded()
         {
-            if (!BS_Utils.Plugin.LevelData.IsSet || BS_Utils.Plugin.LevelData.Mode != Mode.Standard ||
-                !PluginConfig.Instance.enabled)
+            if (!BS_Utils.Plugin.LevelData.IsSet || BS_Utils.Plugin.LevelData.Mode != BS_Utils.Gameplay.Mode.Standard || !PluginConfig.Instance.enabled)
                 return;
             var scoreController = Resources.FindObjectsOfTypeAll<ScoreController>().LastOrDefault();
             if (scoreController == null) return;
-
+            
             //Reset score values
             currentPlayerScore = 0;
             currentMaxPossibleScore = 0;
-            maxPossibleScore =
-                BS_Utils.Plugin.LevelData.GameplayCoreSceneSetupData.beatmapBasicData.cuttableObjectsCount * 115;
+            maxPossibleScore = ScoreModel.ComputeQuickInaccurateMaxMultipliedScoreForBeatmap(BS_Utils.Plugin.LevelData.GameplayCoreSceneSetupData.beatmapBasicData);
             //Create board
             var boardHandler = SetupLeaderboardObject();
             //Setup events
-            scoreController.scoreDidChangeEvent += delegate(int score, int modifiedScore)
+            if (maxPossibleScore !=
+                ScoreModel.ComputeQuickInaccurateMaxMultipliedScoreForBeatmap(BS_Utils.Plugin.LevelData
+                    .GameplayCoreSceneSetupData.beatmapBasicData))
             {
-                ScoreController_scoreDidChangeEvent(score, modifiedScore, boardHandler);
-            };
+                ScoreController_immediateMaxPossibleScoreDidChangeEvent(ScoreModel.ComputeQuickInaccurateMaxMultipliedScoreForBeatmap(BS_Utils.Plugin.LevelData
+                    .GameplayCoreSceneSetupData.beatmapBasicData), maxPossibleScore);
+            }
+            scoreController.scoreDidChangeEvent += delegate(int score,int modifiedScore) { ScoreController_scoreDidChangeEvent(score, modifiedScore, boardHandler); };
+
         }
 
         private void ScoreController_scoreDidChangeEvent(int score, int modifiedScore, InSongBoard leaderboard)
@@ -140,7 +143,12 @@ namespace InSongLeaderboard
             storedScores.Add(new LeaderboardInfo(currentPlayerName, currentPlayerScore, 0));
             leaderboard.UpdateScores();
         }
-
+        private void ScoreController_immediateMaxPossibleScoreDidChangeEvent(int arg1, int arg2)
+        {
+            //  log.Debug("Max Score Update: " + arg1);
+            currentMaxPossibleScore = arg1;
+        }
+        
         [OnExit]
         public void OnApplicationQuit()
         {
@@ -170,7 +178,7 @@ namespace InSongLeaderboard
 
                                 if (PluginConfig.Instance.simpleNames)
                                 {
-                                    if (text.text.Contains("<size=85%>"))
+                                    if (text.text.Contains("<size=80%>"))
                                     {
                                         log.Info("1 " + playerName);
                                         var splitText = text.text.Split('>', '<');
@@ -181,12 +189,13 @@ namespace InSongLeaderboard
                                             playerName = playerName.Substring(0, playerName.Length - 2);
                                         //playerName = playerName.Remove(Mathf.Clamp(playerName.Length - 3, 0, playerName.Length), 3);
                                     }
-                                    else if (text.text.Contains("<size=75%>"))
+                                    else if (text.text.Contains("<size=70%>"))
                                     {
                                         playerName = text.text.Split('<')[0];
                                         //  Plugin.log.Info("2 " + playerName);
                                         if (!string.IsNullOrWhiteSpace(playerName) && playerName.Contains(" - "))
                                             playerName = playerName.Substring(0, playerName.Length - 2);
+                                        
                                         //    playerName = playerName.Substring(0, playerName.LastIndexOf('-'));
                                         // playerName = playerName.Remove(Mathf.Clamp(playerName.Length - 3, 0, playerName.Length), 3);
                                     }
