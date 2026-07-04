@@ -48,7 +48,7 @@ namespace InSongLeaderboard
             BSEvents.difficultySelected += BSEvents_difficultySelected;
             BSEvents.levelSelected += BSEvents_levelSelected;
         }
-
+        
         private void BSEvents_levelSelected(LevelCollectionViewController arg1, BeatmapLevel arg2)
         {
             // log.Info("Level selected");
@@ -59,12 +59,14 @@ namespace InSongLeaderboard
         {
             var userInfo = await GetUserInfo.GetUserAsync();
             currentPlayerName = userInfo.userName;
+            storedScores.Clear();
+            
         }
 
         private void BSEvents_difficultySelected(StandardLevelDetailViewController arg1)
-        {
-            //  log.Info("Diff selected");
+        { 
             storedScores.Clear();
+            //log.Info("Diff selected + storedScores clear");
         }
 
         private InSongBoard SetupLeaderboardObject()
@@ -123,6 +125,7 @@ namespace InSongLeaderboard
             //Create board
             var boardHandler = SetupLeaderboardObject();
             //Setup events
+            scoreController.scoreDidChangeEvent += delegate(int score,int modifiedScore) { ScoreController_scoreDidChangeEvent(score, modifiedScore, boardHandler); };
             if (maxPossibleScore !=
                 ScoreModel.ComputeQuickInaccurateMaxMultipliedScoreForBeatmap(BS_Utils.Plugin.LevelData
                     .GameplayCoreSceneSetupData.beatmapBasicData))
@@ -130,8 +133,6 @@ namespace InSongLeaderboard
                 ScoreController_immediateMaxPossibleScoreDidChangeEvent(ScoreModel.ComputeQuickInaccurateMaxMultipliedScoreForBeatmap(BS_Utils.Plugin.LevelData
                     .GameplayCoreSceneSetupData.beatmapBasicData), maxPossibleScore);
             }
-            scoreController.scoreDidChangeEvent += delegate(int score,int modifiedScore) { ScoreController_scoreDidChangeEvent(score, modifiedScore, boardHandler); };
-
         }
 
         private void ScoreController_scoreDidChangeEvent(int score, int modifiedScore, InSongBoard leaderboard)
@@ -219,7 +220,6 @@ namespace InSongLeaderboard
                 {
                     log.Error($"Failed to grab scores from Leaderboard {ex}");
                 }
-
 
             //foreach (LeaderboardInfo entry in playerScores)
             //  {
