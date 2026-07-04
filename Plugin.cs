@@ -26,8 +26,6 @@ namespace InSongLeaderboard
         public static int currentPlayerScore;
         public static int currentMaxPossibleScore;
         public static int maxPossibleScore;
-        internal static Plugin Instance { get; private set; }
-        internal static IPALogger log { get; set; }
 
         [Init]
         public Plugin(IPALogger logger, Config config)
@@ -36,6 +34,9 @@ namespace InSongLeaderboard
             log = logger;
             PluginConfig.Instance = config.Generated<PluginConfig>();
         }
+
+        internal static Plugin Instance { get; private set; }
+        internal static IPALogger log { get; set; }
 
         [OnStart]
         public void OnApplicationStart()
@@ -53,7 +54,7 @@ namespace InSongLeaderboard
             // log.Info("Level selected");
             storedScores.Clear();
         }
-        
+
         private async void BSEvents_lateMenuSceneLoadedFresh(ScenesTransitionSetupDataSO obj)
         {
             var userInfo = await GetUserInfo.GetUserAsync();
@@ -136,9 +137,9 @@ namespace InSongLeaderboard
 
             currentPlayerScore = score;
             storedScores.RemoveAll(x => x.playerPosition == 0);
-            storedScores.Add(new LeaderboardInfo(currentPlayerName, currentPlayerScore, 0)); 
+            storedScores.Add(new LeaderboardInfo(currentPlayerName, currentPlayerScore, 0));
             leaderboard.UpdateScores();
-        } 
+        }
 
         [OnExit]
         public void OnApplicationQuit()
@@ -149,79 +150,74 @@ namespace InSongLeaderboard
         {
             if (SceneManager.GetActiveScene().name == "GameCore") return;
 
-            var leaderboardTables = Resources.FindObjectsOfTypeAll<LeaderboardTableView>();
-
-            if (leaderboardTables != null && leaderboardTables.Length > 0)
-            {
-                var tableView = leaderboardTables.FirstOrDefault();
-                if (tableView != null)
+            var boards = Resources.FindObjectsOfTypeAll<LeaderboardTableView>().FirstOrDefault()
+                ?.transform
+                .Find("Viewport")?.Find("Content").GetComponentsInChildren<LeaderboardTableCell>();
+            if (boards != null)
+                try
                 {
-                    var content = tableView.transform.Find("Viewport")?.Find("Content");
-                    if (content != null)
+                    foreach (var cell in boards)
                     {
-                        // Get all LeaderboardTableCell components from children
-                        var boards = content.GetComponentsInChildren<LeaderboardTableCell>();
-
-                        if (boards != null)
-                            try
+                        var cellTexts = cell.GetComponentsInChildren<TextMeshProUGUI>();
+                        var playerName = "";
+                        var pos = -1;
+                        var score = -1;
+                        foreach (var text in cellTexts)
+                        {
+                            if (text.name == "PlayerName")
                             {
-                                foreach (var cell in boards)
+                                playerName = text.text;
+
+                                if (PluginConfig.Instance.simpleNames)
                                 {
-                                    // Get all TextMeshProUGUI components from children
-                                    var cellTexts = cell.GetComponentsInChildren<TextMeshProUGUI>(true);
-
-                                    // Alternative if the above doesn't work:
-                                    //TextMeshProUGUI[] cellTexts = cell.gameObject.GetComponentsInChildren<TextMeshProUGUI>();
-                                    var playerName = "";
-                                    var pos = -1;
-                                    var score = -1;
-
-                                    foreach (var text in cellTexts)
+                                    if (text.text.Contains("<size=85%>"))
                                     {
-                                        if (text.name == "PlayerName")
-                                        {
-                                            playerName = text.text;
-
-                                            if (PluginConfig.Instance.simpleNames)
-                                            {
-                                                if (text.text.Contains("<size=85%>"))
-                                                {
-                                                    log.Info("1 " + playerName);
-                                                    var splitText = text.text.Split('>', '<');
-                                                    playerName = splitText[2];
-                                                    if (string.IsNullOrWhiteSpace(playerName) && splitText.Length >= 5)
-                                                        playerName = splitText[4];
-                                                    if (!string.IsNullOrWhiteSpace(playerName) &&
-                                                        playerName.Contains(" - "))
-                                                        playerName = playerName.Substring(0, playerName.Length - 2);
-                                                }
-                                                else if (text.text.Contains("<size=75%>"))
-                                                {
-                                                    playerName = text.text.Split('<')[0];
-                                                    if (!string.IsNullOrWhiteSpace(playerName) &&
-                                                        playerName.Contains(" - "))
-                                                        playerName = playerName.Substring(0, playerName.Length - 2);
-                                                }
-                                            }
-                                        }
-
-                                        if (text.name == "Rank") pos = int.Parse(text.text);
-                                        if (text.name == "Score") score = int.Parse(text.text.Replace(" ", ""));
+                                        log.Info("1 " + playerName);
+                                        var splitText = text.text.Split('>', '<');
+                                        playerName = splitText[2];
+                                        if (string.IsNullOrWhiteSpace(playerName) && splitText.Length >= 5)
+                                            playerName = splitText[4];
+                                        if (!string.IsNullOrWhiteSpace(playerName) && playerName.Contains(" - "))
+                                            playerName = playerName.Substring(0, playerName.Length - 2);
+                                        //playerName = playerName.Remove(Mathf.Clamp(playerName.Length - 3, 0, playerName.Length), 3);
                                     }
-
-                                    var entry = new LeaderboardInfo(playerName, score, pos);
-                                    if (!storedScores.Any(x =>
-                                            x.playerName == entry.playerName && x.playerScore == entry.playerScore))
-                                        storedScores.Add(entry);
+                                    else if (text.text.Contains("<size=75%>"))
+                                    {
+                                        playerName = text.text.Split('<')[0];
+                                        //  Plugin.log.Info("2 " + playerName);
+                                        if (!string.IsNullOrWhiteSpace(playerName) && playerName.Contains(" - "))
+                                            playerName = playerName.Substring(0, playerName.Length - 2);
+                                        //    playerName = playerName.Substring(0, playerName.LastIndexOf('-'));
+                                        // playerName = playerName.Remove(Mathf.Clamp(playerName.Length - 3, 0, playerName.Length), 3);
+                                    }
                                 }
                             }
-                            catch (Exception ex)
-                            {
-                                log.Error($"Failed to grab scores from Leaderboard {ex}");
-                            }
+
+                            if (text.name == "Rank") pos = int.Parse(text.text);
+                            if (text.name == "Score") score = int.Parse(text.text.Replace(" ", ""));
+                        }
+
+                        // log.Info($"Processed Score: {playerName} | {score} | {pos}");
+                        var entry = new LeaderboardInfo(playerName, score, pos);
+                        if (!storedScores.Any(x =>
+                                x.playerName == entry.playerName && x.playerScore == entry.playerScore))
+                            storedScores.Add(entry);
+                        //      else
+                        //        Plugin.log.Info("Entry already present");
                     }
                 }
-            }
+                catch (Exception ex)
+                {
+                    log.Error($"Failed to grab scores from Leaderboard {ex}");
+                }
+
+
+            //foreach (LeaderboardInfo entry in playerScores)
+            //  {
+            //      Log("Yoinking Leaderboard Entry for Position: " + entry.playerPosition);
+            //      Log("Name: " + entry.playerName);
+            //      Log("Score: " + entry.playerScore);
+            //}
         }
     }
 }

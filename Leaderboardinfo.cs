@@ -3,8 +3,9 @@
     public class LeaderboardInfo
     {
         public string playerName;
-        public int playerScore;
         public int playerPosition;
+        public int playerScore;
+
         public LeaderboardInfo(string name, int score, int position)
         {
             playerName = name;
@@ -16,16 +17,12 @@
         {
             if (!PluginConfig.Instance.sortByAcc)
                 return b.playerScore.CompareTo(a.playerScore);
-            else
-            {
-                //       Plugin.Log("A: " + a.GetAcc() + " B: " + b.GetAcc());
-                return b.GetAcc().CompareTo(a.GetAcc());
-            }
-
+            //       Plugin.Log("A: " + a.GetAcc() + " B: " + b.GetAcc());
+            return b.GetAcc().CompareTo(a.GetAcc());
         }
+
         public float GetAcc()
         {
-
             if (playerPosition == 0)
                 if (Plugin.currentMaxPossibleScore > 0)
                     return (float)playerScore / Plugin.currentMaxPossibleScore;

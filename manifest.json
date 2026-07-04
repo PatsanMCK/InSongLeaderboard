@@ -9,6 +9,6 @@
   "dependsOn": {
     "BSIPA": "^4.1.0",
     "BeatSaberMarkupLanguage": "^1.4.0",
-    "BS Utils":  "^1.7.0"
+    "BS Utils": "^1.7.0"
   }
 }

@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+
 namespace InSongLeaderboard
 {
     public class PluginConfig
