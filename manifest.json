@@ -3,9 +3,9 @@
   "id": "InSongLeaderboard",
   "name": "InSongLeaderboard",
   "author": "Kyle 1413",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "",
-  "gameVersion": "1.15.0",
+  "gameVersion": "1.40.8",
   "dependsOn": {
     "BSIPA": "^4.1.0",
     "BeatSaberMarkupLanguage": "^1.4.0",
