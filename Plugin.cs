@@ -153,82 +153,86 @@ namespace InSongLeaderboard
         [OnExit]
         public void OnApplicationQuit()
         {
+            Harmony.UnpatchAll();
         }
 
         public static void GrabScores()
         {
-            if (SceneManager.GetActiveScene().name == "GameCore") return;
-            storedScores.Clear();
-           // var boards = Resources.FindObjectsOfTypeAll<LeaderboardTableView>().FirstOrDefault()
-               // ?.transform
+            if (GameObject.Find("BSMLLeaderboard").activeInHierarchy)
+            {
+                if (SceneManager.GetActiveScene().name == "GameCore") return;
+                storedScores.Clear();
+                // var boards = Resources.FindObjectsOfTypeAll<LeaderboardTableView>().FirstOrDefault()
+                // ?.transform
                 //.Find("Viewport")?.Find("Content").GetComponentsInChildren<LeaderboardTableCell>();
                 var boards = GameObject.Find("BSMLLeaderboard").transform.Find("Viewport").Find("Content")
                     .GetComponentsInChildren<LeaderboardTableCell>();
-            if (boards != null)
-                try
-                {
-                    foreach (var cell in boards)
+                if (boards != null)
+                    try
                     {
-                        var cellTexts = cell.GetComponentsInChildren<TextMeshProUGUI>();
-                        var playerName = "";
-                        var pos = -1;
-                        var score = -1;
-                        foreach (var text in cellTexts)
+                        foreach (var cell in boards)
                         {
-                            if (text.name == "PlayerName")
+                            var cellTexts = cell.GetComponentsInChildren<TextMeshProUGUI>();
+                            var playerName = "";
+                            var pos = -1;
+                            var score = -1;
+                            foreach (var text in cellTexts)
                             {
-                                playerName = text.text;
-
-                                if (true)
+                                if (text.name == "PlayerName")
                                 {
-                                    if (text.text.Contains("<size=80%>"))
+                                    playerName = text.text;
+
+                                    if (true)
                                     {
-                                        log.Info("1 " + playerName);
-                                        var splitText = text.text.Split('>', '<');
-                                        playerName = splitText[2];
-                                        if (string.IsNullOrWhiteSpace(playerName) && splitText.Length >= 5)
-                                            playerName = splitText[4];
-                                        if (!string.IsNullOrWhiteSpace(playerName) && playerName.Contains(" - "))
-                                            playerName = playerName.Substring(0, playerName.Length - 2);
-                                        //playerName = playerName.Remove(Mathf.Clamp(playerName.Length - 3, 0, playerName.Length), 3);
-                                    }
-                                    else if (text.text.Contains("<size=70%>"))
-                                    {
-                                        playerName = text.text.Split('<')[0];
-                                        //  Plugin.log.Info("2 " + playerName);
-                                        if (!string.IsNullOrWhiteSpace(playerName) && playerName.Contains(" - "))
-                                            playerName = playerName.Substring(0, playerName.Length - 2);
-                                        
-                                        //    playerName = playerName.Substring(0, playerName.LastIndexOf('-'));
-                                        // playerName = playerName.Remove(Mathf.Clamp(playerName.Length - 3, 0, playerName.Length), 3);
+                                        if (text.text.Contains("<size=80%>"))
+                                        {
+                                            log.Info("1 " + playerName);
+                                            var splitText = text.text.Split('>', '<');
+                                            playerName = splitText[2];
+                                            if (string.IsNullOrWhiteSpace(playerName) && splitText.Length >= 5)
+                                                playerName = splitText[4];
+                                            if (!string.IsNullOrWhiteSpace(playerName) && playerName.Contains(" - "))
+                                                playerName = playerName.Substring(0, playerName.Length - 2);
+                                            //playerName = playerName.Remove(Mathf.Clamp(playerName.Length - 3, 0, playerName.Length), 3);
+                                        }
+                                        else if (text.text.Contains("<size=70%>"))
+                                        {
+                                            playerName = text.text.Split('<')[0];
+                                            //  Plugin.log.Info("2 " + playerName);
+                                            if (!string.IsNullOrWhiteSpace(playerName) && playerName.Contains(" - "))
+                                                playerName = playerName.Substring(0, playerName.Length - 2);
+
+                                            //    playerName = playerName.Substring(0, playerName.LastIndexOf('-'));
+                                            // playerName = playerName.Remove(Mathf.Clamp(playerName.Length - 3, 0, playerName.Length), 3);
+                                        }
                                     }
                                 }
+
+                                if (text.name == "Rank") pos = int.Parse(text.text);
+                                if (text.name == "Score") score = int.Parse(text.text.Replace(" ", ""));
                             }
 
-                            if (text.name == "Rank") pos = int.Parse(text.text);
-                            if (text.name == "Score") score = int.Parse(text.text.Replace(" ", ""));
+                            // log.Info($"Processed Score: {playerName} | {score} | {pos}");
+                            var entry = new LeaderboardInfo(playerName, score, pos);
+                            if (!storedScores.Any(x =>
+                                    x.playerName == entry.playerName && x.playerScore == entry.playerScore))
+                                storedScores.Add(entry);
+                            //      else
+                            //        Plugin.log.Info("Entry already present");
                         }
-
-                        // log.Info($"Processed Score: {playerName} | {score} | {pos}");
-                        var entry = new LeaderboardInfo(playerName, score, pos);
-                        if (!storedScores.Any(x =>
-                                x.playerName == entry.playerName && x.playerScore == entry.playerScore))
-                            storedScores.Add(entry);
-                        //      else
-                        //        Plugin.log.Info("Entry already present");
                     }
-                }
-                catch (Exception ex)
-                {
-                    log.Error($"Failed to grab scores from Leaderboard {ex}");
-                }
+                    catch (Exception ex)
+                    {
+                        log.Error($"Failed to grab scores from Leaderboard {ex}");
+                    }
 
-            //foreach (LeaderboardInfo entry in playerScores)
-            //  {
-            //      Log("Yoinking Leaderboard Entry for Position: " + entry.playerPosition);
-            //      Log("Name: " + entry.playerName);
-            //      Log("Score: " + entry.playerScore);
-            //}
+                //foreach (LeaderboardInfo entry in playerScores)
+                //  {
+                //      Log("Yoinking Leaderboard Entry for Position: " + entry.playerPosition);
+                //      Log("Name: " + entry.playerName);
+                //      Log("Score: " + entry.playerScore);
+                //}
+            }
         }
     }
 }
