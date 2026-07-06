@@ -1,4 +1,4 @@
-Mod that makes a leaderboard appear in song similar to osu! Fixed to launch at 1.39+.
+Mod that makes a leaderboard appear in song similar to osu! Fixed to launch at 1.40+. Some issues at 1.39+
 
 Rewrite of original rewrite by https://github.com/Kylemc1413
 
