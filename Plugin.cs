@@ -164,7 +164,7 @@ namespace InSongLeaderboard
                 if (SceneManager.GetActiveScene().name == "GameCore") return;
                 storedScores.Clear();
                 // var boards = Resources.FindObjectsOfTypeAll<LeaderboardTableView>().FirstOrDefault()
-                // ?.transform
+                // ?.transform                                                  <--- old implementation that sucks
                 //.Find("Viewport")?.Find("Content").GetComponentsInChildren<LeaderboardTableCell>();
                 var boards = GameObject.Find("BSMLLeaderboard").transform.Find("Viewport").Find("Content")
                     .GetComponentsInChildren<LeaderboardTableCell>();
