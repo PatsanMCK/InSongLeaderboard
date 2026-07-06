@@ -11,4 +11,4 @@ Show acc instead of score
 
 ## Knows issues:
 
-Broken ScoreSaber leaderboard when opening a map another leaderboard is selected (For fix need to reselect diff/map with opened ScoreSaber)
+Broken ScoreSaber leaderboard when opening a map with another leaderboard open (For fix need to reselect diff/map with opened ScoreSaber)
