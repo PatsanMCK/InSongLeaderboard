@@ -158,6 +158,7 @@ namespace InSongLeaderboard
 
         public static void GrabScores()
         {
+            //ScoreSaber score grabbing, do BeatLeader after this if pls
             if (GameObject.Find("BSMLLeaderboard").activeInHierarchy)
             {
                 if (SceneManager.GetActiveScene().name == "GameCore") return;
