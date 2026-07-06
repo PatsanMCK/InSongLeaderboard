@@ -7,7 +7,7 @@ On the in game leaderboard shows last opened tab on ScoreSaber leaderboard befor
 ## Planned features
 Selection between ScoreSaber and BeatLeader to show leaderboard
 
-Moving the leaderboard while paused in song to needed position
+Moving the leaderboard while paused in song to preffered position
 
 Show acc instead of score
 
