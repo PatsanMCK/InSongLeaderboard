@@ -8,3 +8,7 @@ Selection between ScoreSaber and BeatLeader to show leaderboard
 Moving the leaderboard while paused in song to needed position
 
 Show acc instead of score
+
+## Knows issues:
+
+Broken ScoreSaber leaderboard if when opening a map another leaderboard is selected (For fix need to reselect diff/map with opened ScoreSaber)
