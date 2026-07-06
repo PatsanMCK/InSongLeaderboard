@@ -2,7 +2,7 @@ Mod that makes a leaderboard appear in song similar to the one in osu!. Fixed to
 
 Rewrite of original rewrite by https://github.com/Kylemc1413
 
-Shows last opened tab on ScoreSaber leaderboard before loading into the map.
+On the in game leaderboard shows last opened tab on ScoreSaber leaderboard before loading into the map.
 
 ## Planned features
 Selection between ScoreSaber and BeatLeader to show leaderboard
