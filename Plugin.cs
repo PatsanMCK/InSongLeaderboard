@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using BeatSaberMarkupLanguage;
 using BS_Utils.Gameplay;
 using BS_Utils.Utilities;
@@ -26,6 +27,7 @@ namespace InSongLeaderboard
         public static int currentPlayerScore;
         public static int currentMaxPossibleScore;
         public static int maxPossibleScore;
+        private Timer timer;
 
         [Init]
         public Plugin(IPALogger logger, Config config)
@@ -60,7 +62,7 @@ namespace InSongLeaderboard
             var userInfo = await GetUserInfo.GetUserAsync();
             currentPlayerName = userInfo.userName;
             storedScores.Clear();
-            
+            TimedGrabbing();
         }
 
         private void BSEvents_difficultySelected(StandardLevelDetailViewController arg1)
@@ -69,6 +71,10 @@ namespace InSongLeaderboard
             //log.Info("Diff selected + storedScores clear");
         }
 
+        public void TimedGrabbing()
+        {
+            timer = new Timer(_ => GrabScores(), null, 2000, 2000);
+        }
         private InSongBoard SetupLeaderboardObject()
         {
             var Leaderboard = new GameObject("InSongLeaderboard");
@@ -154,18 +160,21 @@ namespace InSongLeaderboard
         public void OnApplicationQuit()
         {
             Harmony.UnpatchAll();
+            timer.Dispose();
         }
 
         public static void GrabScores()
         {
-            if (GameObject.Find("BSMLLeaderboard").activeInHierarchy)
+            var leaderboardBSML = GameObject.Find("BSMLLeaderboard");
+            //ScoreSaber score grabbing, do BeatLeader after this if pls
+            if (leaderboardBSML != null && leaderboardBSML.activeInHierarchy)
             {
                 if (SceneManager.GetActiveScene().name == "GameCore") return;
                 storedScores.Clear();
                 // var boards = Resources.FindObjectsOfTypeAll<LeaderboardTableView>().FirstOrDefault()
-                // ?.transform
+                // ?.transform                                                  <--- old implementation that sucks
                 //.Find("Viewport")?.Find("Content").GetComponentsInChildren<LeaderboardTableCell>();
-                var boards = GameObject.Find("BSMLLeaderboard").transform.Find("Viewport").Find("Content")
+                var boards = leaderboardBSML.transform.Find("Viewport").Find("Content")
                     .GetComponentsInChildren<LeaderboardTableCell>();
                 if (boards != null)
                     try
@@ -186,7 +195,7 @@ namespace InSongLeaderboard
                                     {
                                         if (text.text.Contains("<size=80%>"))
                                         {
-                                            log.Info("1 " + playerName);
+                                            //log.Info("1 " + playerName);
                                             var splitText = text.text.Split('>', '<');
                                             playerName = splitText[2];
                                             if (string.IsNullOrWhiteSpace(playerName) && splitText.Length >= 5)
@@ -225,7 +234,6 @@ namespace InSongLeaderboard
                     {
                         log.Error($"Failed to grab scores from Leaderboard {ex}");
                     }
-
                 //foreach (LeaderboardInfo entry in playerScores)
                 //  {
                 //      Log("Yoinking Leaderboard Entry for Position: " + entry.playerPosition);
