@@ -158,10 +158,12 @@ namespace InSongLeaderboard
         public static void GrabScores()
         {
             if (SceneManager.GetActiveScene().name == "GameCore") return;
-
-            var boards = Resources.FindObjectsOfTypeAll<LeaderboardTableView>().FirstOrDefault()
-                ?.transform
-                .Find("Viewport")?.Find("Content").GetComponentsInChildren<LeaderboardTableCell>();
+            storedScores.Clear();
+           // var boards = Resources.FindObjectsOfTypeAll<LeaderboardTableView>().FirstOrDefault()
+               // ?.transform
+                //.Find("Viewport")?.Find("Content").GetComponentsInChildren<LeaderboardTableCell>();
+                var boards = GameObject.Find("BSMLLeaderboard").transform.Find("Viewport").Find("Content")
+                    .GetComponentsInChildren<LeaderboardTableCell>();
             if (boards != null)
                 try
                 {
@@ -177,7 +179,7 @@ namespace InSongLeaderboard
                             {
                                 playerName = text.text;
 
-                                if (PluginConfig.Instance.simpleNames)
+                                if (true)
                                 {
                                     if (text.text.Contains("<size=80%>"))
                                     {
