@@ -11,7 +11,7 @@ Selection between ScoreSaber and BeatLeader to show leaderboard
 
 Moving the leaderboard while paused in song to preffered position
 
-Show acc instead of score (and sort by it?)
+Show acc instead of score
 
 ## Knows issues
 
