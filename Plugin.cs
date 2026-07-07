@@ -43,7 +43,7 @@ namespace InSongLeaderboard
         [OnStart]
         public void OnApplicationStart()
         {
-            var harmony = new Harmony("com.kyle1413.BeatSaber.InSongLeaderboard");
+            var harmony = new Harmony("com.patsanmck.BeatSaber.InSongLeaderboard");
             harmony.PatchAll();
             BSEvents.gameSceneLoaded += BSEvents_GameSceneLoaded;
             BSEvents.lateMenuSceneLoadedFresh += BSEvents_lateMenuSceneLoadedFresh;
@@ -53,7 +53,6 @@ namespace InSongLeaderboard
         
         private void BSEvents_levelSelected(LevelCollectionViewController arg1, BeatmapLevel arg2)
         {
-            // log.Info("Level selected");
             storedScores.Clear();
         }
 
@@ -68,7 +67,6 @@ namespace InSongLeaderboard
         private void BSEvents_difficultySelected(StandardLevelDetailViewController arg1)
         { 
             storedScores.Clear();
-            //log.Info("Diff selected + storedScores clear");
         }
 
         public void TimedGrabbing()
@@ -84,8 +82,6 @@ namespace InSongLeaderboard
             cs.scaleFactor = 1.0f;
             cs.dynamicPixelsPerUnit = 10f;
             var gr = Leaderboard.AddComponent<GraphicRaycaster>();
-            // Leaderboard.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, 1f);
-            // Leaderboard.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, 1f);
 
             var coreGameHUD = Resources.FindObjectsOfTypeAll<CoreGameHUDController>()
                 ?.FirstOrDefault(x => x.isActiveAndEnabled)?.gameObject ?? null;
@@ -93,12 +89,10 @@ namespace InSongLeaderboard
                 .FirstOrDefault(x => x.isActiveAndEnabled);
             if (coreGameHUD != null)
                 Leaderboard.transform.SetParent(coreGameHUD.transform, true);
-            //      textObj.transform.position = new Vector3(0, 0f, 0);
             var depth = coreGameHUD != null ? coreGameHUD.transform.GetChild(1).transform.position.z : 9f;
             if (flyingGameHUD != null)
             {
                 depth = flyingGameHUD.transform.GetChild(0).transform.position.z / 2;
-                //  Leaderboard.transform.localPosition = new Vector3(0, 0.75f, 6f);
                 Leaderboard.transform.eulerAngles = new Vector3(345f, 0f, 0f);
             }
 
@@ -143,8 +137,6 @@ namespace InSongLeaderboard
 
         private void ScoreController_scoreDidChangeEvent(int score, int modifiedScore, InSongBoard leaderboard)
         {
-            //  log.Debug("Score Update: " + score);
-
             currentPlayerScore = score;
             storedScores.RemoveAll(x => x.playerPosition == 0);
             storedScores.Add(new LeaderboardInfo(currentPlayerName, currentPlayerScore, 0));
@@ -152,7 +144,6 @@ namespace InSongLeaderboard
         }
         private void ScoreController_immediateMaxPossibleScoreDidChangeEvent(int arg1, int arg2)
         {
-            //  log.Debug("Max Score Update: " + arg1);
             currentMaxPossibleScore = arg1;
         }
         
@@ -166,14 +157,10 @@ namespace InSongLeaderboard
         public static void GrabScores()
         {
             var leaderboardBSML = GameObject.Find("BSMLLeaderboard");
-            //ScoreSaber score grabbing, do BeatLeader after this if pls
             if (leaderboardBSML != null && leaderboardBSML.activeInHierarchy)
             {
                 if (SceneManager.GetActiveScene().name == "GameCore") return;
                 storedScores.Clear();
-                // var boards = Resources.FindObjectsOfTypeAll<LeaderboardTableView>().FirstOrDefault()
-                // ?.transform                                                  <--- old implementation that sucks
-                //.Find("Viewport")?.Find("Content").GetComponentsInChildren<LeaderboardTableCell>();
                 var boards = leaderboardBSML.transform.Find("Viewport").Find("Content")
                     .GetComponentsInChildren<LeaderboardTableCell>();
                 if (boards != null)
@@ -189,57 +176,39 @@ namespace InSongLeaderboard
                             {
                                 if (text.name == "PlayerName")
                                 {
-                                    playerName = text.text;
-
-                                    if (true)
+                                    playerName = text.text; 
+                                    if (text.text.Contains("<size=80%>"))
                                     {
-                                        if (text.text.Contains("<size=80%>"))
-                                        {
-                                            //log.Info("1 " + playerName);
-                                            var splitText = text.text.Split('>', '<');
-                                            playerName = splitText[2];
-                                            if (string.IsNullOrWhiteSpace(playerName) && splitText.Length >= 5)
-                                                playerName = splitText[4];
-                                            if (!string.IsNullOrWhiteSpace(playerName) && playerName.Contains(" - "))
-                                                playerName = playerName.Substring(0, playerName.Length - 2);
-                                            //playerName = playerName.Remove(Mathf.Clamp(playerName.Length - 3, 0, playerName.Length), 3);
-                                        }
-                                        else if (text.text.Contains("<size=70%>"))
-                                        {
-                                            playerName = text.text.Split('<')[0];
-                                            //  Plugin.log.Info("2 " + playerName);
-                                            if (!string.IsNullOrWhiteSpace(playerName) && playerName.Contains(" - "))
-                                                playerName = playerName.Substring(0, playerName.Length - 2);
-
-                                            //    playerName = playerName.Substring(0, playerName.LastIndexOf('-'));
-                                            // playerName = playerName.Remove(Mathf.Clamp(playerName.Length - 3, 0, playerName.Length), 3);
-                                        }
+                                        //log.Info("1 " + playerName);
+                                        var splitText = text.text.Split('>', '<');
+                                        playerName = splitText[2];
+                                        if (string.IsNullOrWhiteSpace(playerName) && splitText.Length >= 5)
+                                            playerName = splitText[4];
+                                        if (!string.IsNullOrWhiteSpace(playerName) && playerName.Contains(" - "))
+                                            playerName = playerName.Substring(0, playerName.Length - 2);
+                                    }
+                                    else if (text.text.Contains("<size=70%>"))
+                                    {
+                                        playerName = text.text.Split('<')[0];
+                                        //  Plugin.log.Info("2 " + playerName);
+                                        if (!string.IsNullOrWhiteSpace(playerName) && playerName.Contains(" - "))
+                                            playerName = playerName.Substring(0, playerName.Length - 2);
                                     }
                                 }
 
                                 if (text.name == "Rank") pos = int.Parse(text.text);
                                 if (text.name == "Score") score = int.Parse(text.text.Replace(" ", ""));
                             }
-
-                            // log.Info($"Processed Score: {playerName} | {score} | {pos}");
                             var entry = new LeaderboardInfo(playerName, score, pos);
                             if (!storedScores.Any(x =>
                                     x.playerName == entry.playerName && x.playerScore == entry.playerScore))
                                 storedScores.Add(entry);
-                            //      else
-                            //        Plugin.log.Info("Entry already present");
                         }
                     }
                     catch (Exception ex)
                     {
                         log.Error($"Failed to grab scores from Leaderboard {ex}");
                     }
-                //foreach (LeaderboardInfo entry in playerScores)
-                //  {
-                //      Log("Yoinking Leaderboard Entry for Position: " + entry.playerPosition);
-                //      Log("Name: " + entry.playerName);
-                //      Log("Score: " + entry.playerScore);
-                //}
             }
         }
     }
