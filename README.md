@@ -7,6 +7,8 @@ On the in game leaderboard shows last opened tab on ScoreSaber leaderboard befor
 ## Planned features
 Selection between ScoreSaber and BeatLeader to show leaderboard
 
+Work with leaderboards API instead of BSML Leaderboard directly
+
 Moving the leaderboard while paused in song to preffered position
 
 Show acc instead of score (and sort by it?)
