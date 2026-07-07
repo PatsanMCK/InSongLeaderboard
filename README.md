@@ -17,4 +17,4 @@ Show acc instead of score (and sort by it?)
 
 ## Dependencies
 
-ScoreSaber
+ScoreSaber 3.4.0+
