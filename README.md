@@ -5,9 +5,9 @@ Rewrite of original rewrite by https://github.com/Kylemc1413
 On the in game leaderboard shows last opened tab on ScoreSaber leaderboard before loading into the map.
 
 ## Planned features
-Selection between ScoreSaber and BeatLeader to show leaderboard
-
 Work with leaderboards API instead of BSML Leaderboard directly
+
+Selection between ScoreSaber and BeatLeader to show leaderboard
 
 Moving the leaderboard while paused in song to preffered position
 
