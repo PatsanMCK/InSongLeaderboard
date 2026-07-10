@@ -1,13 +1,53 @@
-﻿<bg xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xsi:schemaLocation='https://monkeymanboy.github.io/BSML-Docs/ https://raw.githubusercontent.com/monkeymanboy/BSML-Docs/gh-pages/BSMLSchema.xsd'>
-  <!--
-  <text anchor-pos-y='10.0' text='InSongLeaderboard'></text>
-    <horizontal anchor-pos-y='5.0'> 
-  <text text='LeaderBoard Text 1'/>
-  <text align='Right' text='99999999'/>
-    </horizontal> 
-    <text anchor-pos-y='0.0' text='LeaderBoard Text 2'/>
-    <text anchor-pos-y='-5.0' text='LeaderBoard Text 3'/>
-    -->
-<leaderboard id='songLeaderboard' anchor-pos-y='-10'></leaderboard>
+<bg bg="round-rect-panel" pref-width="84" pref-height="47"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="https://monkeymanboy.github.io/BSML-Docs/ https://raw.githubusercontent.com/monkeymanboy/BSML-Docs/gh-pages/BSMLSchema.xsd">
+  <vertical pref-width="80" pref-height="44" spacing="0.8" pad="1">
+    <text id="drag-handle" text="=== MOVE PANEL ===" align="Center" font-size="2.6"
+          font-color="#59CCFF" pref-width="78" pref-height="3" raycast-target="true" />
+    <horizontal pref-width="78" pref-height="5">
+      <text id="title" text="Leaderboard" align="Left" font-size="3.4" pref-width="54" />
+      <text id="status" text="" align="Right" font-size="2.3" font-color="#AAAAAA" pref-width="24" />
+    </horizontal>
 
+    <horizontal id="row-0" bg="round-rect-panel" pref-width="78" pref-height="6" spacing="0.7" pad-left="1" pad-right="1">
+      <image id="avatar-0" src="#WhitePixel" pref-width="4.2" pref-height="4.2" preserve-aspect="true" />
+      <text id="rank-0" text="#1" align="Center" font-size="3.0" pref-width="6" />
+      <text id="name-0" text="Player" align="Left" font-size="3.0" pref-width="22" overflow-mode="Ellipsis" word-wrapping="false" />
+      <text id="score-0" text="0 · 0.00%" align="Right" font-size="2.7" pref-width="25" />
+      <text id="modifiers-0" text="--" align="Center" font-size="2.5" font-color="#FFB83D" pref-width="9" overflow-mode="Ellipsis" word-wrapping="false" />
+      <text id="movement-0" text="" align="Center" font-size="3.0" pref-width="4" />
+    </horizontal>
+    <horizontal id="row-1" bg="round-rect-panel" pref-width="78" pref-height="6" spacing="0.7" pad-left="1" pad-right="1">
+      <image id="avatar-1" src="#WhitePixel" pref-width="4.2" pref-height="4.2" preserve-aspect="true" />
+      <text id="rank-1" text="#2" align="Center" font-size="3.0" pref-width="6" />
+      <text id="name-1" text="Player" align="Left" font-size="3.0" pref-width="22" overflow-mode="Ellipsis" word-wrapping="false" />
+      <text id="score-1" text="0 · 0.00%" align="Right" font-size="2.7" pref-width="25" />
+      <text id="modifiers-1" text="--" align="Center" font-size="2.5" font-color="#FFB83D" pref-width="9" overflow-mode="Ellipsis" word-wrapping="false" />
+      <text id="movement-1" text="" align="Center" font-size="3.0" pref-width="4" />
+    </horizontal>
+    <horizontal id="row-2" bg="round-rect-panel" pref-width="78" pref-height="6" spacing="0.7" pad-left="1" pad-right="1">
+      <image id="avatar-2" src="#WhitePixel" pref-width="4.2" pref-height="4.2" preserve-aspect="true" />
+      <text id="rank-2" text="#3" align="Center" font-size="3.0" pref-width="6" />
+      <text id="name-2" text="Player" align="Left" font-size="3.0" pref-width="22" overflow-mode="Ellipsis" word-wrapping="false" />
+      <text id="score-2" text="0 · 0.00%" align="Right" font-size="2.7" pref-width="25" />
+      <text id="modifiers-2" text="--" align="Center" font-size="2.5" font-color="#FFB83D" pref-width="9" overflow-mode="Ellipsis" word-wrapping="false" />
+      <text id="movement-2" text="" align="Center" font-size="3.0" pref-width="4" />
+    </horizontal>
+    <horizontal id="row-3" bg="round-rect-panel" pref-width="78" pref-height="6" spacing="0.7" pad-left="1" pad-right="1">
+      <image id="avatar-3" src="#WhitePixel" pref-width="4.2" pref-height="4.2" preserve-aspect="true" />
+      <text id="rank-3" text="#4" align="Center" font-size="3.0" pref-width="6" />
+      <text id="name-3" text="Player" align="Left" font-size="3.0" pref-width="22" overflow-mode="Ellipsis" word-wrapping="false" />
+      <text id="score-3" text="0 · 0.00%" align="Right" font-size="2.7" pref-width="25" />
+      <text id="modifiers-3" text="--" align="Center" font-size="2.5" font-color="#FFB83D" pref-width="9" overflow-mode="Ellipsis" word-wrapping="false" />
+      <text id="movement-3" text="" align="Center" font-size="3.0" pref-width="4" />
+    </horizontal>
+    <horizontal id="row-4" bg="round-rect-panel" pref-width="78" pref-height="6" spacing="0.7" pad-left="1" pad-right="1">
+      <image id="avatar-4" src="#WhitePixel" pref-width="4.2" pref-height="4.2" preserve-aspect="true" />
+      <text id="rank-4" text="#5" align="Center" font-size="3.0" pref-width="6" />
+      <text id="name-4" text="Player" align="Left" font-size="3.0" pref-width="22" overflow-mode="Ellipsis" word-wrapping="false" />
+      <text id="score-4" text="0 · 0.00%" align="Right" font-size="2.7" pref-width="25" />
+      <text id="modifiers-4" text="--" align="Center" font-size="2.5" font-color="#FFB83D" pref-width="9" overflow-mode="Ellipsis" word-wrapping="false" />
+      <text id="movement-4" text="" align="Center" font-size="3.0" pref-width="4" />
+    </horizontal>
+  </vertical>
 </bg>
