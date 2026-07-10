@@ -1,0 +1,22 @@
+<vertical pref-width="80" pref-height="74" spacing="2" pad-top="3">
+  <text text="In-Song Leaderboard" align="Center" font-size="5" />
+  <modifier-container child-expand-width="true" horizontal-fit="PreferredSize">
+    <toggle-setting text="Enabled" value="enabled" bind-value="true" apply-on-change="true" />
+    <horizontal pref-height="8" spacing="2">
+      <text text="Leaderboard" align="Left" pref-width="32" />
+      <button text="~source-button-text" on-click="toggle-source" pref-width="32" />
+    </horizontal>
+    <horizontal pref-height="8" spacing="2">
+      <text text="Ranking scope" align="Left" pref-width="32" />
+      <button text="~scope-button-text" on-click="toggle-scope" pref-width="32" />
+    </horizontal>
+    <slider-setting text="Leaderboard range" value="leaderboard-depth" formatter="format-depth"
+                    bind-value="true" apply-on-change="true" show-buttons="true"
+                    increment="5" min="10" max="100" />
+    <toggle-setting text="Show avatars" value="show-avatars" bind-value="true" apply-on-change="true" />
+    <toggle-setting text="Score + accuracy" value="show-score-and-accuracy" bind-value="true" apply-on-change="true" />
+    <toggle-setting text="Show modifiers" value="show-modifiers" bind-value="true" apply-on-change="true" />
+    <toggle-setting text="Rank-up animation" value="animate-rank-up" bind-value="true" apply-on-change="true" />
+    <button text="Reset panel position" on-click="reset-panel-position" pref-height="8" />
+  </modifier-container>
+</vertical>

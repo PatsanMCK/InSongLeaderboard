@@ -1,19 +1,17 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Threading;
 using BeatSaberMarkupLanguage;
+using BeatSaberMarkupLanguage.FloatingScreen;
+using BeatSaberMarkupLanguage.GameplaySetup;
 using BS_Utils.Gameplay;
 using BS_Utils.Utilities;
 using HarmonyLib;
 using HMUI;
 using IPA;
 using IPA.Config.Stores;
-using TMPro;
 using UnityEngine;
-using UnityEngine.SceneManagement;
-using UnityEngine.UI;
 using Config = IPA.Config.Config;
 using IPALogger = IPA.Logging.Logger;
 
@@ -22,12 +20,26 @@ namespace InSongLeaderboard
     [Plugin(RuntimeOptions.SingleStartInit)]
     public class Plugin
     {
-        public static List<LeaderboardInfo> storedScores = new List<LeaderboardInfo>();
-        public static string currentPlayerName = "";
+        private const string HarmonyId = "com.patsanmck.BeatSaber.InSongLeaderboard";
+        private const string GameplayTabName = "InSong LB";
+        private const string GameplayTabResource = "InSongLeaderboard.settings.bsml";
+
+        public static string currentPlayerId = string.Empty;
+        public static string currentPlayerName = string.Empty;
         public static int currentPlayerScore;
         public static int currentMaxPossibleScore;
+        public static float currentPlayerAccuracy;
+        public static string currentPlayerModifiers = string.Empty;
         public static int maxPossibleScore;
-        private Timer timer;
+
+        private readonly GameplaySetupView _gameplaySetupView = new GameplaySetupView();
+        private Harmony _harmony;
+        private bool _gameplayTabRegistered;
+
+        internal static BeatmapKey CurrentBeatmapKey { get; private set; }
+        internal static bool HasCurrentBeatmapKey { get; private set; }
+        internal static Plugin Instance { get; private set; }
+        internal static IPALogger log { get; private set; }
 
         [Init]
         public Plugin(IPALogger logger, Config config)
@@ -35,212 +47,255 @@ namespace InSongLeaderboard
             Instance = this;
             log = logger;
             PluginConfig.Instance = config.Generated<PluginConfig>();
+            PluginConfig.Instance.leaderboardDepth =
+                LeaderboardRequest.ClampCount(PluginConfig.Instance.leaderboardDepth);
+            log.Info(string.Format(
+                "Initialized v1.3.0: enabled={0}, source={1}, scope={2}, depth={3}, avatars={4}, animation={5}, scoreAndAcc={6}, modifiers={7}",
+                PluginConfig.Instance.enabled,
+                PluginConfig.Instance.leaderboardSource,
+                PluginConfig.Instance.leaderboardScope,
+                PluginConfig.Instance.leaderboardDepth,
+                PluginConfig.Instance.showAvatars,
+                PluginConfig.Instance.animateRankUp,
+                PluginConfig.Instance.showScoreAndAccuracy,
+                PluginConfig.Instance.showModifiers));
         }
-
-        internal static Plugin Instance { get; private set; }
-        internal static IPALogger log { get; set; }
 
         [OnStart]
         public void OnApplicationStart()
         {
-            var harmony = new Harmony("com.kyle1413.BeatSaber.InSongLeaderboard");
-            harmony.PatchAll();
+            _harmony = new Harmony(HarmonyId);
+            _harmony.PatchAll();
+            log.Info("Harmony patches applied; subscribing to menu and game scene events.");
+
             BSEvents.gameSceneLoaded += BSEvents_GameSceneLoaded;
             BSEvents.lateMenuSceneLoadedFresh += BSEvents_lateMenuSceneLoadedFresh;
-            BSEvents.difficultySelected += BSEvents_difficultySelected;
-            BSEvents.levelSelected += BSEvents_levelSelected;
-        }
-        
-        private void BSEvents_levelSelected(LevelCollectionViewController arg1, BeatmapLevel arg2)
-        {
-            // log.Info("Level selected");
-            storedScores.Clear();
         }
 
-        private async void BSEvents_lateMenuSceneLoadedFresh(ScenesTransitionSetupDataSO obj)
+        internal static void CaptureBeatmap(BeatmapKey beatmapKey)
         {
-            var userInfo = await GetUserInfo.GetUserAsync();
-            currentPlayerName = userInfo.userName;
-            storedScores.Clear();
-            TimedGrabbing();
+            CurrentBeatmapKey = beatmapKey;
+            HasCurrentBeatmapKey = true;
+            log.Info(string.Format(
+                "Captured beatmap: {0} / {1} / {2}",
+                beatmapKey.levelId,
+                beatmapKey.difficulty,
+                beatmapKey.beatmapCharacteristic.serializedName));
         }
 
-        private void BSEvents_difficultySelected(StandardLevelDetailViewController arg1)
-        { 
-            storedScores.Clear();
-            //log.Info("Diff selected + storedScores clear");
-        }
-
-        public void TimedGrabbing()
+        private async void BSEvents_lateMenuSceneLoadedFresh(ScenesTransitionSetupDataSO transition)
         {
-            timer = new Timer(_ => GrabScores(), null, 2000, 2000);
-        }
-        private InSongBoard SetupLeaderboardObject()
-        {
-            var Leaderboard = new GameObject("InSongLeaderboard");
-            var canvas = Leaderboard.AddComponent<Canvas>();
-            canvas.renderMode = RenderMode.WorldSpace;
-            var cs = Leaderboard.AddComponent<CanvasScaler>();
-            cs.scaleFactor = 1.0f;
-            cs.dynamicPixelsPerUnit = 10f;
-            var gr = Leaderboard.AddComponent<GraphicRaycaster>();
-            // Leaderboard.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, 1f);
-            // Leaderboard.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, 1f);
+            log.Debug("Late menu scene loaded; registering gameplay setup tab and resolving platform user.");
+            EnsureGameplayTabRegistered();
 
-            var coreGameHUD = Resources.FindObjectsOfTypeAll<CoreGameHUDController>()
-                ?.FirstOrDefault(x => x.isActiveAndEnabled)?.gameObject ?? null;
-            var flyingGameHUD = Resources.FindObjectsOfTypeAll<FlyingGameHUDRotation>()
-                .FirstOrDefault(x => x.isActiveAndEnabled);
-            if (coreGameHUD != null)
-                Leaderboard.transform.SetParent(coreGameHUD.transform, true);
-            //      textObj.transform.position = new Vector3(0, 0f, 0);
-            var depth = coreGameHUD != null ? coreGameHUD.transform.GetChild(1).transform.position.z : 9f;
-            if (flyingGameHUD != null)
+            try
             {
-                depth = flyingGameHUD.transform.GetChild(0).transform.position.z / 2;
-                //  Leaderboard.transform.localPosition = new Vector3(0, 0.75f, 6f);
-                Leaderboard.transform.eulerAngles = new Vector3(345f, 0f, 0f);
+                var userInfo = await GetUserInfo.GetUserAsync();
+                currentPlayerId = userInfo.platformUserId;
+                currentPlayerName = userInfo.userName;
+                log.Debug(string.Format(
+                    "Platform user resolved: id={0}, name={1}",
+                    currentPlayerId,
+                    currentPlayerName));
+            }
+            catch (Exception ex)
+            {
+                log.Warn("Could not read the current platform user: " + ex.Message);
+            }
+        }
+
+        private void EnsureGameplayTabRegistered()
+        {
+            if (_gameplayTabRegistered)
+            {
+                log.Debug("Gameplay setup tab is already registered.");
+                return;
             }
 
-            Leaderboard.transform.localPosition = new Vector3(PluginConfig.Instance.position.x,
-                PluginConfig.Instance.position.y, depth);
-            Leaderboard.transform.localRotation = Quaternion.identity;
-            Leaderboard.transform.localScale = PluginConfig.Instance.scale * new Vector3(0.06f, 0.06f, 0.06f);
-            var canvasSettings = Leaderboard.AddComponent<CurvedCanvasSettings>();
-            canvasSettings.SetRadius(0);
+            try
+            {
+                GameplaySetup.Instance.AddTab(
+                    GameplayTabName,
+                    GameplayTabResource,
+                    _gameplaySetupView);
+                _gameplayTabRegistered = true;
+                log.Info(string.Format(
+                    "Gameplay setup tab registered: name={0}, resource={1}",
+                    GameplayTabName,
+                    GameplayTabResource));
+            }
+            catch (Exception ex)
+            {
+                log.Error("Failed to register the gameplay setup tab after menu load: " + ex);
+            }
+        }
 
-            var boardHandler = Leaderboard.AddComponent<InSongBoard>();
+        private InSongBoard SetupLeaderboardObject()
+        {
+            log.Debug(string.Format(
+                "Creating HUD: hasBeatmapKey={0}, position=({1}, {2}), scale={3}",
+                HasCurrentBeatmapKey,
+                PluginConfig.Instance.position.x,
+                PluginConfig.Instance.position.y,
+                PluginConfig.Instance.scale));
+            var coreGameHud = Resources.FindObjectsOfTypeAll<CoreGameHUDController>()
+                .FirstOrDefault(controller => controller.isActiveAndEnabled);
+            var flyingGameHud = Resources.FindObjectsOfTypeAll<FlyingGameHUDRotation>()
+                .FirstOrDefault(controller => controller.isActiveAndEnabled);
 
-            BSMLParser.Instance.Parse(
-                Utilities.GetResourceContent(Assembly.GetExecutingAssembly(),
-                    "InSongLeaderboard.board.bsml"), Leaderboard, boardHandler);
-            return boardHandler;
+            var depth = coreGameHud != null && coreGameHud.transform.childCount > 1
+                ? coreGameHud.transform.GetChild(1).position.z
+                : 9f;
+
+            if (flyingGameHud != null && flyingGameHud.transform.childCount > 0)
+            {
+                depth = flyingGameHud.transform.GetChild(0).position.z / 2f;
+            }
+
+            var floatingScreen = FloatingScreen.CreateFloatingScreen(
+                new Vector2(86f, 52f),
+                false,
+                Vector3.zero,
+                Quaternion.identity,
+                0f,
+                false);
+            var leaderboard = floatingScreen.gameObject;
+            leaderboard.name = "InSongLeaderboard";
+
+            if (coreGameHud != null)
+                leaderboard.transform.SetParent(coreGameHud.transform, true);
+
+            if (PluginConfig.Instance.hasSavedPanelTransform)
+            {
+                leaderboard.transform.localPosition = PluginConfig.Instance.panelLocalPosition;
+                leaderboard.transform.localEulerAngles = PluginConfig.Instance.panelLocalRotation;
+            }
+            else
+            {
+                leaderboard.transform.localPosition = new Vector3(
+                    PluginConfig.Instance.position.x,
+                    PluginConfig.Instance.position.y,
+                    depth);
+                leaderboard.transform.localRotation = flyingGameHud == null
+                    ? Quaternion.identity
+                    : Quaternion.Euler(345f, 0f, 0f);
+            }
+
+            leaderboard.transform.localScale = PluginConfig.Instance.scale *
+                                               new Vector3(0.06f, 0.06f, 0.06f);
+
+            var board = leaderboard.AddComponent<InSongBoard>();
+            board.Configure(CurrentBeatmapKey, HasCurrentBeatmapKey);
+
+            try
+            {
+                var markup = Utilities.GetResourceContent(
+                    Assembly.GetExecutingAssembly(),
+                    "InSongLeaderboard.board.bsml");
+                log.Debug("Parsing HUD BSML; characters=" + (markup == null ? 0 : markup.Length));
+                BSMLParser.Instance.Parse(markup, leaderboard, board);
+                log.Info("HUD BSML parsed successfully.");
+            }
+            catch (Exception ex)
+            {
+                log.Error("Failed to parse HUD BSML: " + ex);
+                UnityEngine.Object.Destroy(leaderboard);
+                return null;
+            }
+
+            return board;
         }
 
         private void BSEvents_GameSceneLoaded()
         {
-            if (!BS_Utils.Plugin.LevelData.IsSet || BS_Utils.Plugin.LevelData.Mode != BS_Utils.Gameplay.Mode.Standard || !PluginConfig.Instance.enabled)
+            log.Info(string.Format(
+                "Game scene loaded: levelDataSet={0}, mode={1}, enabled={2}, beatmapCaptured={3}",
+                BS_Utils.Plugin.LevelData.IsSet,
+                BS_Utils.Plugin.LevelData.IsSet ? BS_Utils.Plugin.LevelData.Mode.ToString() : "n/a",
+                PluginConfig.Instance.enabled,
+                HasCurrentBeatmapKey));
+
+            if (!BS_Utils.Plugin.LevelData.IsSet ||
+                BS_Utils.Plugin.LevelData.Mode != BS_Utils.Gameplay.Mode.Standard ||
+                !PluginConfig.Instance.enabled)
+            {
+                log.Info("HUD creation skipped because level data, game mode, or enabled setting did not match.");
                 return;
+            }
+
             var scoreController = Resources.FindObjectsOfTypeAll<ScoreController>().LastOrDefault();
-            if (scoreController == null) return;
-            
-            //Reset score values
+            if (scoreController == null)
+            {
+                log.Warn("HUD creation skipped: ScoreController was not found.");
+                return;
+            }
+
             currentPlayerScore = 0;
             currentMaxPossibleScore = 0;
-            maxPossibleScore = ScoreModel.ComputeQuickInaccurateMaxMultipliedScoreForBeatmap(BS_Utils.Plugin.LevelData.GameplayCoreSceneSetupData.beatmapBasicData);
-            //Create board
-            var boardHandler = SetupLeaderboardObject();
-            //Setup events
-            scoreController.scoreDidChangeEvent += delegate(int score,int modifiedScore) { ScoreController_scoreDidChangeEvent(score, modifiedScore, boardHandler); };
-            if (maxPossibleScore !=
-                ScoreModel.ComputeQuickInaccurateMaxMultipliedScoreForBeatmap(BS_Utils.Plugin.LevelData
-                    .GameplayCoreSceneSetupData.beatmapBasicData))
+            currentPlayerAccuracy = 0f;
+            currentPlayerModifiers = FormatGameplayModifiers(
+                BS_Utils.Plugin.LevelData.GameplayCoreSceneSetupData.gameplayModifiers);
+            maxPossibleScore = ScoreModel.ComputeQuickInaccurateMaxMultipliedScoreForBeatmap(
+                BS_Utils.Plugin.LevelData.GameplayCoreSceneSetupData.beatmapBasicData);
+
+            var board = SetupLeaderboardObject();
+            if (board == null)
+                return;
+
+            scoreController.scoreDidChangeEvent += delegate(int score, int modifiedScore)
             {
-                ScoreController_immediateMaxPossibleScoreDidChangeEvent(ScoreModel.ComputeQuickInaccurateMaxMultipliedScoreForBeatmap(BS_Utils.Plugin.LevelData
-                    .GameplayCoreSceneSetupData.beatmapBasicData), maxPossibleScore);
-            }
+                currentPlayerScore = modifiedScore > 0 ? modifiedScore : score;
+                currentMaxPossibleScore = scoreController.immediateMaxPossibleModifiedScore;
+                currentPlayerAccuracy = currentMaxPossibleScore > 0
+                    ? (float)currentPlayerScore / currentMaxPossibleScore
+                    : 0f;
+                board.UpdateScores();
+            };
         }
 
-        private void ScoreController_scoreDidChangeEvent(int score, int modifiedScore, InSongBoard leaderboard)
+        private static string FormatGameplayModifiers(GameplayModifiers modifiers)
         {
-            //  log.Debug("Score Update: " + score);
+            if (modifiers == null)
+                return string.Empty;
 
-            currentPlayerScore = score;
-            storedScores.RemoveAll(x => x.playerPosition == 0);
-            storedScores.Add(new LeaderboardInfo(currentPlayerName, currentPlayerScore, 0));
-            leaderboard.UpdateScores();
+            var values = new List<string>();
+            if (modifiers.energyType == GameplayModifiers.EnergyType.Battery) values.Add("BE");
+            if (modifiers.noFailOn0Energy) values.Add("NF");
+            if (modifiers.instaFail) values.Add("IF");
+            if (modifiers.failOnSaberClash) values.Add("CS");
+            if (modifiers.enabledObstacleType == GameplayModifiers.EnabledObstacleType.NoObstacles) values.Add("NO");
+            if (modifiers.noBombs) values.Add("NB");
+            if (modifiers.strictAngles) values.Add("SA");
+            if (modifiers.disappearingArrows) values.Add("DA");
+            if (modifiers.ghostNotes) values.Add("GN");
+            if (modifiers.songSpeed == GameplayModifiers.SongSpeed.Slower) values.Add("SS");
+            if (modifiers.songSpeed == GameplayModifiers.SongSpeed.Faster) values.Add("FS");
+            if (modifiers.songSpeed == GameplayModifiers.SongSpeed.SuperFast) values.Add("SF");
+            if (modifiers.smallCubes) values.Add("SC");
+            if (modifiers.proMode) values.Add("PM");
+            if (modifiers.noArrows) values.Add("NA");
+            if (modifiers.zenMode) values.Add("ZM");
+            return string.Join(",", values);
         }
-        private void ScoreController_immediateMaxPossibleScoreDidChangeEvent(int arg1, int arg2)
-        {
-            //  log.Debug("Max Score Update: " + arg1);
-            currentMaxPossibleScore = arg1;
-        }
-        
+
         [OnExit]
         public void OnApplicationQuit()
         {
-            Harmony.UnpatchAll();
-            timer.Dispose();
-        }
+            BSEvents.gameSceneLoaded -= BSEvents_GameSceneLoaded;
+            BSEvents.lateMenuSceneLoadedFresh -= BSEvents_lateMenuSceneLoadedFresh;
 
-        public static void GrabScores()
-        {
-            var leaderboardBSML = GameObject.Find("BSMLLeaderboard");
-            //ScoreSaber score grabbing, do BeatLeader after this if pls
-            if (leaderboardBSML != null && leaderboardBSML.activeInHierarchy)
+            try
             {
-                if (SceneManager.GetActiveScene().name == "GameCore") return;
-                storedScores.Clear();
-                // var boards = Resources.FindObjectsOfTypeAll<LeaderboardTableView>().FirstOrDefault()
-                // ?.transform                                                  <--- old implementation that sucks
-                //.Find("Viewport")?.Find("Content").GetComponentsInChildren<LeaderboardTableCell>();
-                var boards = leaderboardBSML.transform.Find("Viewport").Find("Content")
-                    .GetComponentsInChildren<LeaderboardTableCell>();
-                if (boards != null)
-                    try
-                    {
-                        foreach (var cell in boards)
-                        {
-                            var cellTexts = cell.GetComponentsInChildren<TextMeshProUGUI>();
-                            var playerName = "";
-                            var pos = -1;
-                            var score = -1;
-                            foreach (var text in cellTexts)
-                            {
-                                if (text.name == "PlayerName")
-                                {
-                                    playerName = text.text;
-
-                                    if (true)
-                                    {
-                                        if (text.text.Contains("<size=80%>"))
-                                        {
-                                            //log.Info("1 " + playerName);
-                                            var splitText = text.text.Split('>', '<');
-                                            playerName = splitText[2];
-                                            if (string.IsNullOrWhiteSpace(playerName) && splitText.Length >= 5)
-                                                playerName = splitText[4];
-                                            if (!string.IsNullOrWhiteSpace(playerName) && playerName.Contains(" - "))
-                                                playerName = playerName.Substring(0, playerName.Length - 2);
-                                            //playerName = playerName.Remove(Mathf.Clamp(playerName.Length - 3, 0, playerName.Length), 3);
-                                        }
-                                        else if (text.text.Contains("<size=70%>"))
-                                        {
-                                            playerName = text.text.Split('<')[0];
-                                            //  Plugin.log.Info("2 " + playerName);
-                                            if (!string.IsNullOrWhiteSpace(playerName) && playerName.Contains(" - "))
-                                                playerName = playerName.Substring(0, playerName.Length - 2);
-
-                                            //    playerName = playerName.Substring(0, playerName.LastIndexOf('-'));
-                                            // playerName = playerName.Remove(Mathf.Clamp(playerName.Length - 3, 0, playerName.Length), 3);
-                                        }
-                                    }
-                                }
-
-                                if (text.name == "Rank") pos = int.Parse(text.text);
-                                if (text.name == "Score") score = int.Parse(text.text.Replace(" ", ""));
-                            }
-
-                            // log.Info($"Processed Score: {playerName} | {score} | {pos}");
-                            var entry = new LeaderboardInfo(playerName, score, pos);
-                            if (!storedScores.Any(x =>
-                                    x.playerName == entry.playerName && x.playerScore == entry.playerScore))
-                                storedScores.Add(entry);
-                            //      else
-                            //        Plugin.log.Info("Entry already present");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        log.Error($"Failed to grab scores from Leaderboard {ex}");
-                    }
-                //foreach (LeaderboardInfo entry in playerScores)
-                //  {
-                //      Log("Yoinking Leaderboard Entry for Position: " + entry.playerPosition);
-                //      Log("Name: " + entry.playerName);
-                //      Log("Score: " + entry.playerScore);
-                //}
+                if (_gameplayTabRegistered)
+                    GameplaySetup.Instance.RemoveTab(GameplayTabName);
             }
+            catch (Exception)
+            {
+                // GameplaySetup can already be destroyed during application exit.
+            }
+
+            if (_harmony != null)
+                _harmony.UnpatchSelf();
         }
     }
 }
